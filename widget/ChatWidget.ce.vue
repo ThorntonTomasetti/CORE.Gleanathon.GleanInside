@@ -12,7 +12,7 @@
       </svg>
     </button>
 
-    <div v-else class="panel" :class="{ dragging }" role="dialog" :aria-label="title" :style="panelStyle">
+    <div v-else ref="panelRef" class="panel" :class="{ dragging }" role="dialog" :aria-label="title" :style="panelStyle">
       <header class="panel-header" @pointerdown="onDragStart">
         <div class="header-brand">
           <svg viewBox="-2 25 92 112" width="16" height="16" aria-hidden="true" fill="white">
@@ -98,11 +98,25 @@
           type="button"
           class="attach-btn"
           :class="{ active: !!attachment }"
-          aria-label="Attach screenshot"
+          aria-label="Attach image"
+          title="Attach image from disk"
           @click="fileInput?.click()"
         >
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
             <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="attach-btn"
+          :class="{ active: !!attachment && attachment.name.startsWith('screenshot-') }"
+          :disabled="capturing"
+          aria-label="Capture page screenshot"
+          title="Capture page as context"
+          @click="onCaptureScreenshot"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.65 0-3 1.35-3 3s1.35 3 3 3 3-1.35 3-3-1.35-3-3-3z"/>
           </svg>
         </button>
         <input
@@ -126,6 +140,7 @@
   import { useDragResize } from './composables/useDragResize'
   import { useMarkdown } from './composables/useMarkdown'
   import { useAttachment } from './composables/useAttachment'
+  import { usePageScreenshot } from './composables/usePageScreenshot'
   import { postChat } from './api'
   import type { ChatMessage } from './types'
 
@@ -142,6 +157,7 @@
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
   const { attachment, onFileSelect, clearAttachment } = useAttachment()
+  const { capturing, captureScreenshot } = usePageScreenshot()
 
   const open = ref(false)
   const draft = ref('')
@@ -151,6 +167,12 @@
   const conversationId = ref<string | undefined>(undefined)
   const scroller = ref<HTMLElement | null>(null)
   const fileInput = ref<HTMLInputElement | null>(null)
+  const panelRef = ref<HTMLElement | null>(null)
+
+  async function onCaptureScreenshot () {
+    const result = await captureScreenshot(panelRef.value)
+    if (result) attachment.value = result
+  }
 
   watch(messages, async () => {
     await nextTick()
