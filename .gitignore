@@ -63,3 +63,4 @@ coverage/
 RevitPlugin/**/bin/
 RevitPlugin/**/obj/
 RevitPlugin/**/*.user
+ShapeDiver/CLAUDE.md
