@@ -48,9 +48,8 @@ chatRouter.post('/', async (req, res) => {
 
     // Chat API is the only surface that supports file attachments (citation on fragment).
     // Agent API is text-only — fall back to Chat when a file is present.
-    const resolvedAgentId = scope.agentId ?? agentId
-    const result = (resolvedAgentId && !fileId)
-      ? await gleanAgentRun({ agentId: resolvedAgentId, message, conversationId })
+    const result = (agentId && !fileId)
+      ? await gleanAgentRun({ agentId, message, conversationId })
       : await gleanChat({ message, conversationId, fileId, filters: scope.filters })
     return res.json({
       answer: result.answer,
