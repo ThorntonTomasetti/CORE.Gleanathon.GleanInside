@@ -33,6 +33,14 @@ export const appScopes: Record<string, AppScope> = {
       ],
     },
   },
+  'core-swap': {
+    label: 'SWAP — Shear Wall Automation Platform',
+    filters: {
+      facetFilters: [
+        { fieldName: 'label', values: [{ value: 'core-swap' }] },
+      ],
+    },
+  },
 }
 
 export function getScope (appId: string): AppScope | undefined {
