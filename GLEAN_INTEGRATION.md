@@ -163,6 +163,6 @@ The `AnchorBottomRight` method positions the widget at the bottom-right of the s
 |---|---|
 | `RevitPlugin/.../UI/GleanFabWidget.xaml` | WPF window definition — borderless, topmost, 68×68 start size |
 | `RevitPlugin/.../UI/GleanFabWidget.xaml.cs` | STA thread lifecycle, WebView2 init, dynamic resize via postMessage |
-| `widget.html` | Minimal host page for `<glean-helper>` — shadow DOM style overrides + MutationObserver resize bridge |
+| `RevitPlugin/widget.html` | Minimal host page for `<glean-helper>` — shadow DOM style overrides + MutationObserver resize bridge |
 | `server/src/routes/chat.ts` | Express route — routes to Agent API or generic Chat API based on `agentId` |
 | `server/src/appScopes.ts` | Registered app IDs and their Glean scope filters |
