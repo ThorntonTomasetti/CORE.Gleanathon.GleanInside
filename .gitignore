@@ -40,7 +40,6 @@ lerna-debug.log*
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
 
 # OS
@@ -59,3 +58,8 @@ coverage/
 .cache/
 .temp/
 .tmp/
+
+# .NET / Revit plugin
+RevitPlugin/**/bin/
+RevitPlugin/**/obj/
+RevitPlugin/**/*.user

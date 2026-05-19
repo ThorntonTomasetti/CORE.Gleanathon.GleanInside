@@ -1,0 +1,22 @@
+<UserControl x:Class="GleanInside.RevitPlugin.UI.ChatDockablePane"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf">
+
+    <Grid>
+        <wv2:WebView2 x:Name="WebView"
+                      NavigationCompleted="WebView_NavigationCompleted" />
+
+        <!-- Shown while WebView2 initializes -->
+        <Border x:Name="LoadingOverlay"
+                Background="#1a1a2e"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+            <TextBlock Text="Loading Glean AI Assistant..."
+                       Foreground="#888"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       FontSize="13" />
+        </Border>
+    </Grid>
+</UserControl>
