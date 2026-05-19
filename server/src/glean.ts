@@ -72,14 +72,16 @@ export async function gleanChat (args: GleanChatArgs): Promise<GleanChatResult> 
     throw new Error('GLEAN_BASE_URL and GLEAN_API_KEY must be set')
   }
 
+  const fragment: Record<string, unknown> = { text: args.message }
+  if (args.fileId) fragment.citation = { fileId: args.fileId }
+
   const body: Record<string, unknown> = {
     messages: [
-      { author: 'USER', fragments: [{ text: args.message }] },
+      { author: 'USER', fragments: [fragment] },
     ],
     inclusions: buildInclusions(args.filters),
   }
   if (args.conversationId) body.chatId = args.conversationId
-  if (args.fileId) body.chatFileIds = [args.fileId]
 
   const res = await fetch(`${base.replace(/\/$/, '')}/rest/api/v1/chat`, {
     method: 'POST',

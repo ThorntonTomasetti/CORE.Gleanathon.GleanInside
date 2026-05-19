@@ -22,8 +22,8 @@
   "dependencies": {
     "@fontsource/roboto": "^5.2.10",
     "@mdi/font": "7.4.47",
+    "dom-to-image-more": "^3.7.2",
     "dompurify": "^3.4.5",
-    "html2canvas": "^1.4.1",
     "marked": "^18.0.4",
     "pinia": "^3.0.4",
     "vue": "^3.5.30",

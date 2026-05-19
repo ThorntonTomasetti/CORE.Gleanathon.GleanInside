@@ -22,11 +22,13 @@ export interface GleanScopeFilters {
 export interface AppScope {
   label: string
   filters: GleanScopeFilters
+  agentId?: string
 }
 
 export const appScopes: Record<string, AppScope> = {
   gleaninside: {
     label: 'Gleaninside demo app',
+    agentId: '532b0e6b1e2b47feae7a373fca9fc1da',
     filters: {
       facetFilters: [
         { fieldName: 'label', values: [{ value: 'gleaninside' }] },

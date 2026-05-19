@@ -1,4 +1,4 @@
-import html2canvas from 'html2canvas'
+import domtoimage from 'dom-to-image-more'
 import { ref } from 'vue'
 
 export function usePageScreenshot () {
@@ -13,16 +13,12 @@ export function usePageScreenshot () {
     try {
       const target = document.querySelector<HTMLElement>('[data-glean-context]') ?? document.body
 
-      const canvas = await html2canvas(target, {
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        // Capture only the visible portion of the target
-        windowWidth: document.documentElement.scrollWidth,
-        windowHeight: document.documentElement.scrollHeight,
+      const dataUrl = await domtoimage.toPng(target, {
+        quality: 0.92,
+        // Skip the widget host element entirely
+        filter: (node: Node) => !(node instanceof HTMLElement && node.tagName.toLowerCase() === 'glean-helper'),
       })
 
-      const dataUrl = canvas.toDataURL('image/png')
       const data = dataUrl.split(',')[1]
 
       return {
