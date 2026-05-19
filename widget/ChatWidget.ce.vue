@@ -45,7 +45,10 @@
             class="bubble markdown"
             v-html="renderMarkdown(msg.text)"
           ></div>
-          <div v-else class="bubble">{{ msg.text }}</div>
+          <div v-else class="bubble">
+            <img v-if="(msg as any).attachmentPreview" :src="(msg as any).attachmentPreview" class="msg-attachment-thumb" alt="attached screenshot" />
+            {{ msg.text }}
+          </div>
           <div v-if="msg.citations && msg.citations.length" class="citations">
             <a
               v-for="(c, ci) in msg.citations"
@@ -72,7 +75,36 @@
         </svg>
       </div>
 
+      <div v-if="attachment" class="attachment-preview">
+        <img :src="attachment.previewUrl" :alt="attachment.name" class="attachment-thumb" />
+        <span class="attachment-name">{{ attachment.name }}</span>
+        <button class="attachment-clear" aria-label="Remove attachment" @click="clearAttachment">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+
       <form class="panel-input" @submit.prevent="send">
+        <input
+          ref="fileInput"
+          type="file"
+          accept="image/*"
+          class="file-input-hidden"
+          aria-hidden="true"
+          @change="onFileSelect"
+        />
+        <button
+          type="button"
+          class="attach-btn"
+          :class="{ active: !!attachment }"
+          aria-label="Attach screenshot"
+          @click="fileInput?.click()"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+            <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
+          </svg>
+        </button>
         <input
           v-model="draft"
           :disabled="pending"
@@ -93,6 +125,7 @@
   import { computed, nextTick, ref, watch } from 'vue'
   import { useDragResize } from './composables/useDragResize'
   import { useMarkdown } from './composables/useMarkdown'
+  import { useAttachment } from './composables/useAttachment'
   import { postChat } from './api'
   import type { ChatMessage } from './types'
 
@@ -108,6 +141,7 @@
 
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
+  const { attachment, onFileSelect, clearAttachment } = useAttachment()
 
   const open = ref(false)
   const draft = ref('')
@@ -116,6 +150,7 @@
   const messages = ref<ChatMessage[]>([])
   const conversationId = ref<string | undefined>(undefined)
   const scroller = ref<HTMLElement | null>(null)
+  const fileInput = ref<HTMLInputElement | null>(null)
 
   watch(messages, async () => {
     await nextTick()
@@ -130,15 +165,21 @@
       return
     }
     error.value = null
-    messages.value.push({ role: 'user', text })
+    const pendingAttachment = attachment.value
+    messages.value.push({
+      role: 'user',
+      text,
+      ...(pendingAttachment ? { attachmentPreview: pendingAttachment.previewUrl } : {}),
+    } as ChatMessage)
     draft.value = ''
+    clearAttachment()
     pending.value = true
     try {
       const res = await postChat(apiUrl(), {
         appId: props.appId,
         message: text,
         conversationId: conversationId.value,
-        agentId: props.agentId,
+        ...(pendingAttachment ? { attachment: { name: pendingAttachment.name, type: pendingAttachment.type, data: pendingAttachment.data } } : {}),
       })
       conversationId.value = res.conversationId
       messages.value.push({ role: 'assistant', text: res.answer, citations: res.citations })
@@ -390,6 +431,74 @@
     border-radius: 8px;
     border: 1px solid #f5c2c9;
   }
+
+  /* ── Attachment preview strip ── */
+  .attachment-preview {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f0f1fb;
+    border-top: 1px solid #e4e5f7;
+    font-size: 12px;
+    color: #5a5b7a;
+    flex-shrink: 0;
+  }
+  .attachment-thumb {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #d0d3f5;
+    flex-shrink: 0;
+  }
+  .attachment-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .attachment-clear {
+    background: none;
+    border: none;
+    color: #9899b8;
+    cursor: pointer;
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .attachment-clear:hover { color: #343CED; }
+
+  /* ── Attachment in message bubble ── */
+  .msg-attachment-thumb {
+    display: block;
+    max-width: 100%;
+    max-height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+
+  /* ── Attach button ── */
+  .file-input-hidden { display: none; }
+  .attach-btn {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+    border: 1.5px solid #e4e5f7;
+    background: white;
+    color: #9899b8;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .attach-btn:hover { color: #343CED; border-color: #343CED; }
+  .attach-btn.active { color: #343CED; border-color: #343CED; background: #eceeff; }
 
   /* ── Resize grip ── */
   .resize-grip {

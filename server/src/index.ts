@@ -13,7 +13,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
 app.use(cors({
   origin: allowedOrigins.length ? allowedOrigins : true,
 }))
-app.use(express.json({ limit: '256kb' }))
+app.use(express.json({ limit: '10mb' }))
 
 app.get('/health', (_req, res) => res.json({ ok: true }))
 app.use('/api/chat', chatRouter)

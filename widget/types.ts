@@ -12,11 +12,17 @@ export interface ChatMessage {
   citations?: Citation[]
 }
 
+export interface ChatAttachment {
+  name: string
+  type: string
+  data: string  // base64
+}
+
 export interface ChatRequest {
   appId: string
   message: string
   conversationId?: string
-  agentId?: string
+  attachment?: ChatAttachment
 }
 
 export interface ChatResponse {

@@ -1,13 +1,20 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { getScope } from '../appScopes.js'
-import { gleanAgentRun, gleanChat } from '../glean.js'
+import { gleanAgentRun, gleanChat, gleanUploadFile } from '../glean.js'
+
+const Attachment = z.object({
+  name: z.string().min(1),
+  type: z.string().min(1),
+  data: z.string().min(1),  // base64
+})
 
 const Body = z.object({
   appId: z.string().min(1),
   message: z.string().min(1).max(4000),
   conversationId: z.string().optional(),
   agentId: z.string().min(1).optional(),
+  attachment: Attachment.optional(),
 })
 
 export const chatRouter: Router = Router()
@@ -17,7 +24,7 @@ chatRouter.post('/', async (req, res) => {
   if (!parsed.success) {
     return res.status(400).json({ error: 'invalid request', details: parsed.error.flatten() })
   }
-  const { appId, message, conversationId, agentId } = parsed.data
+  const { appId, message, conversationId, agentId, attachment } = parsed.data
 
   const scope = getScope(appId)
   if (!scope) {
@@ -25,9 +32,23 @@ chatRouter.post('/', async (req, res) => {
   }
 
   try {
+    let fileId: string | undefined
+    if (attachment) {
+      const buffer = Buffer.from(attachment.data, 'base64')
+      fileId = await gleanUploadFile({
+        filename: attachment.name,
+        mimeType: attachment.type,
+        data: buffer,
+        chatId: conversationId,
+      }).catch(err => {
+        console.warn('[chat] file upload failed (continuing without attachment):', err.message)
+        return undefined
+      })
+    }
+
     const result = agentId
       ? await gleanAgentRun({ agentId, message, conversationId })
-      : await gleanChat({ message, conversationId, filters: scope.filters })
+      : await gleanChat({ message, conversationId, fileId, filters: scope.filters })
     return res.json({
       answer: result.answer,
       citations: result.citations,

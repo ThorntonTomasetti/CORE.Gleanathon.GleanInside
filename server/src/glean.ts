@@ -15,7 +15,40 @@ export interface GleanChatResult {
 interface GleanChatArgs {
   message: string
   conversationId?: string
+  fileId?: string
   filters: GleanScopeFilters
+}
+
+export async function gleanUploadFile (args: {
+  filename: string
+  mimeType: string
+  data: Buffer
+  chatId?: string
+}): Promise<string> {
+  const base = process.env.GLEAN_BASE_URL
+  const key = process.env.GLEAN_API_KEY
+  if (!base || !key) throw new Error('GLEAN_BASE_URL and GLEAN_API_KEY must be set')
+
+  const form = new FormData()
+  form.append('file', new Blob([args.data], { type: args.mimeType }), args.filename)
+  if (args.chatId) form.append('chatId', args.chatId)
+
+  const res = await fetch(`${base.replace(/\/$/, '')}/rest/api/v1/uploadchatfiles`, {
+    method: 'POST',
+    headers: { 'authorization': `Bearer ${key}` },
+    body: form,
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '')
+    throw new Error(`Glean uploadchatfiles ${res.status}: ${text || res.statusText}`)
+  }
+
+  const data = await res.json() as any
+  console.log('[glean] uploadchatfiles response:', JSON.stringify(data))
+  const fileId = data?.fileId ?? data?.id ?? data?.fileIds?.[0]
+  if (!fileId) throw new Error(`Glean uploadchatfiles: no fileId in response — ${JSON.stringify(data)}`)
+  return fileId
 }
 
 interface GleanAgentRunArgs {
@@ -46,6 +79,7 @@ export async function gleanChat (args: GleanChatArgs): Promise<GleanChatResult> 
     inclusions: buildInclusions(args.filters),
   }
   if (args.conversationId) body.chatId = args.conversationId
+  if (args.fileId) body.chatFileIds = [args.fileId]
 
   const res = await fetch(`${base.replace(/\/$/, '')}/rest/api/v1/chat`, {
     method: 'POST',
