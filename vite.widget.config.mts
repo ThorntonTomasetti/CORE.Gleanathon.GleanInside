@@ -13,7 +13,10 @@ export default defineConfig({
       customElement: /\.ce\.vue$/,
     }),
   ],
-  define: { 'process.env': {} },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': '({})',
+  },
   resolve: {
     alias: {
       '@widget': fileURLToPath(new URL('widget', import.meta.url)),

@@ -71,6 +71,7 @@
     appId: string
     apiUrl?: string
     title?: string
+    agentId?: string
   }>()
 
   const apiUrl = () => props.apiUrl || '/api/chat'
@@ -105,6 +106,7 @@
         appId: props.appId,
         message: text,
         conversationId: conversationId.value,
+        agentId: props.agentId,
       })
       conversationId.value = res.conversationId
       messages.value.push({ role: 'assistant', text: res.answer, citations: res.citations })
