@@ -30,13 +30,9 @@ A circular blue button is pinned to the **top-right corner** of the page:
 
 Hovering the button shows a "Hide Chat" / "Show Chat" tooltip. The ShapeDiver viewer expands to fill the full width when the chat is hidden.
 
-### Variable Wall Thickness
+### Chatbot prompt example
 
-In the ShapeDiver panel (left side):
-
-1. Locate the **Variable Wall Thickness** parameter in the input panel.
-2. Enter a numeric value or use the slider to set the desired thickness.
-3. The 3D model updates automatically to reflect the new value.
+1. How to input basement wall calculator app's Variable Wall Thickness?
 
 ## Tech Stack
 
