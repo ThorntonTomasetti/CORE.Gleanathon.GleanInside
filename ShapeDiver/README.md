@@ -21,9 +21,22 @@ The app displays two panels side by side:
 2. The ShapeDiver model loads in the left panel — adjust parameters such as wall height, thickness, and other geometry inputs to update the 3D model in real time.
 3. Use the Glean AI chatbot on the right panel to ask questions about the app or get help with inputs.
 
-### Chatbot prompt example
+### Toggle the Chatbot
 
-1. How to input basement wall calculator app's Variable Wall Thickness?
+A circular blue button is pinned to the **top-right corner** of the page:
+
+- **✕ icon** — chat is visible; click to hide it
+- **Chat bubble icon** — chat is hidden; click to show it
+
+Hovering the button shows a "Hide Chat" / "Show Chat" tooltip. The ShapeDiver viewer expands to fill the full width when the chat is hidden.
+
+### Variable Wall Thickness
+
+In the ShapeDiver panel (left side):
+
+1. Locate the **Variable Wall Thickness** parameter in the input panel.
+2. Enter a numeric value or use the slider to set the desired thickness.
+3. The 3D model updates automatically to reflect the new value.
 
 ## Tech Stack
 
@@ -51,5 +64,6 @@ To swap in a different ShapeDiver model, update the `slug` query parameter in th
 
 ## Layout
 
-- **Desktop (>900px):** side-by-side, 50/50 split with chatbot fixed at 400px wide
+- **Desktop (>900px):** side-by-side split with chatbot fixed at 400px wide
 - **Mobile (≤900px):** stacked vertically — 3D viewer on top (60vh), chatbot below (40vh)
+- Hiding the chat panel expands the 3D viewer to full width/height on both desktop and mobile
