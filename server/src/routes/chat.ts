@@ -25,6 +25,7 @@ chatRouter.post('/', async (req, res) => {
   }
 
   try {
+    console.log('[chat] route:', agentId ? `agent (${agentId})` : 'generic chat', '| appId:', appId)
     const result = agentId
       ? await gleanAgentRun({ agentId, message, conversationId })
       : await gleanChat({ message, conversationId, filters: scope.filters })

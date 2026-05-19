@@ -105,6 +105,9 @@
 
   const apiUrl = () => props.apiUrl || '/api/chat'
   const title = computed(() => props.title || 'Glean Helper')
+  const resolvedAgentId = computed(() =>
+    props.agentId ?? new URLSearchParams(window.location.search).get('agentId') ?? undefined
+  )
 
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
@@ -138,7 +141,7 @@
         appId: props.appId,
         message: text,
         conversationId: conversationId.value,
-        agentId: props.agentId,
+        agentId: resolvedAgentId.value,
       })
       conversationId.value = res.conversationId
       messages.value.push({ role: 'assistant', text: res.answer, citations: res.citations })
