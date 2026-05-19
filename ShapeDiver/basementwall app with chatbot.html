@@ -14,15 +14,50 @@
       grid-template-columns: 1fr 400px;
       height: 100vh;
     }
+    .layout.chat-hidden {
+      grid-template-columns: 1fr 0px;
+    }
     #shapediver-frame { width: 100%; height: 100%; border: 0; }
-    #glean-app { border-left: 1px solid #e5e5e5; }
+    #glean-app {
+      border-left: 1px solid #e5e5e5;
+      overflow: hidden;
+      transition: width 0.3s ease;
+    }
+    .layout.chat-hidden #glean-app {
+      border-left: none;
+    }
+
+    /* Toggle button */
+    #chat-toggle {
+      position: fixed;
+      top: 12px;
+      right: 16px;
+      z-index: 1000;
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+      transition: background 0.2s;
+      padding: 0;
+    }
+    #chat-toggle:hover { background: #1558b0; }
+
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; grid-template-rows: 60vh 40vh; }
+      .layout.chat-hidden { grid-template-rows: 1fr 0px; }
+      #chat-toggle { top: 8px; right: 8px; }
     }
   </style>
 </head>
 <body>
-  <div class="layout">
+  <div class="layout" id="layout">
     <iframe
       id="shapediver-frame"
       src="https://tt-acm.github.io/CORE.Iframe.Wrapper/?slug=basement-wall-calculator"
@@ -33,9 +68,31 @@
     <div id="glean-app" style="position: relative; display: block; height: 100%; width: 100%;"></div>
   </div>
 
+  <button id="chat-toggle" title="Toggle AI Assistant">
+    <svg id="icon-hide" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    <svg id="icon-show" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white" style="display:none"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+  </button>
+
   <!-- 3. Render the agent -->
   <script>
-    document.addEventListener('DOMContentLoaded', () => GleanWebSDK.renderChat(document.getElementById('glean-app'), { agentId: "42349c7312dd4630aae2c75daa64803b" }))
+    document.addEventListener('DOMContentLoaded', () => {
+      GleanWebSDK.renderChat(document.getElementById('glean-app'), { agentId: "42349c7312dd4630aae2c75daa64803b" });
+
+      const btn = document.getElementById('chat-toggle');
+      const layout = document.getElementById('layout');
+      let hidden = false;
+
+      const iconHide = document.getElementById('icon-hide');
+      const iconShow = document.getElementById('icon-show');
+
+      btn.addEventListener('click', () => {
+        hidden = !hidden;
+        layout.classList.toggle('chat-hidden', hidden);
+        iconHide.style.display = hidden ? 'none' : '';
+        iconShow.style.display = hidden ? '' : 'none';
+        btn.title = hidden ? 'Show Chat' : 'Hide Chat';
+      });
+    });
   </script>
 </body>
 </html>
