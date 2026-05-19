@@ -1,6 +1,7 @@
 using Autodesk.Revit.Attributes;
 using Autodesk.Revit.DB;
 using Autodesk.Revit.UI;
+using GleanInside.RevitPlugin.UI;
 
 namespace GleanInside.RevitPlugin.Commands
 {
@@ -9,12 +10,7 @@ namespace GleanInside.RevitPlugin.Commands
     {
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
-            var pane = commandData.Application.GetDockablePane(App.PaneId);
-            if (pane.IsShown())
-                pane.Hide();
-            else
-                pane.Show();
-
+            GleanFabWidget.EnsureVisible();
             return Result.Succeeded;
         }
     }
