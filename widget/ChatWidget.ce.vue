@@ -143,6 +143,13 @@
     if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight
   }, { deep: true })
 
+  watch(open, async (isOpen) => {
+    if (isOpen) {
+      await nextTick()
+      autoGrow()
+    }
+  })
+
   async function send () {
     const text = draft.value.trim()
     if (!text || pending.value) return
