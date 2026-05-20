@@ -8,6 +8,7 @@ An injectable helper chatbot backed by Glean. Drop one `<script>` tag and one `<
 - `server/` — Node/Express backend that holds the Glean API key and calls Glean on the widget's behalf.
 - `src/` — a Vue/Vuetify demo host that embeds the widget for local development.
 - `demo/vanilla.html` — a plain-HTML page proving the widget works without any framework.
+- `RevitPlugin/` — C# Revit addin that hosts the widget in a WebView2 floating window.
 
 ## How the pieces fit together
 
@@ -176,14 +177,38 @@ Add two HTML tags somewhere the browser will load them — typically right befor
 
 ### Attributes reference
 
-| Attribute   | Required | Description                                                                                  |
-| ----------- | -------- | -------------------------------------------------------------------------------------------- |
-| `app-id`    | yes      | Must match an entry in `server/src/appScopes.ts`. Determines retrieval scope.                |
-| `api-url`   | yes      | Full URL of the gleanathon backend's chat endpoint. Include `/api/chat`.                     |
-| `agent-id`  | no       | If set, routes through Glean Agents API instead of plain Chat.                               |
-| `title`     | no       | Custom heading text in the chat panel. Defaults to `"Helper"`.                               |
+| Attribute      | Required | Description                                                                                  |
+| -------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `app-id`       | yes      | Must match an entry in `server/src/appScopes.ts`. Determines retrieval scope.                |
+| `api-url`      | yes      | Full URL of the gleanathon backend's chat endpoint. Include `/api/chat`.                     |
+| `agent-id`     | no       | If set, routes through Glean Agents API instead of plain Chat.                               |
+| `title`        | no       | Custom heading text in the chat panel. Defaults to `"Helper"`.                               |
+| `page-context` | no       | Comma-separated list of context fields to send: `url`, `pageTitle`, `html`, `activeView`, `metadata`. Defaults to all. Set to `"false"` or `"none"` to disable entirely. |
 
 The widget renders a fixed-position floating button in the bottom-right corner of the page, so the placement of the `<glean-helper>` tag in the DOM doesn't matter — anywhere inside `<body>` works.
+
+### Overriding the agent ID during development
+
+During development you can switch agent IDs without editing HTML or restarting anything. The widget resolves the agent ID in this priority order:
+
+1. **URL query parameter** (highest) — `?agentId=abc123`
+2. **localStorage** — `glean-agent-id` key
+3. **HTML attribute** — `agent-id="..."` on `<glean-helper>`
+
+Examples:
+
+```
+# Just change the URL
+http://localhost:3000?agentId=532b0e6b1e2b47feae7a373fca9fc1da
+
+# Or set it once in the browser console — persists across refreshes
+localStorage.setItem('glean-agent-id', '532b0e6b1e2b47feae7a373fca9fc1da')
+
+# Clear the override
+localStorage.removeItem('glean-agent-id')
+```
+
+This makes it easy to test different agents without touching code. In production, the HTML attribute is the source of truth.
 
 ## Step 9 — Try it
 
@@ -257,6 +282,281 @@ app.config.compilerOptions.isCustomElement = tag => tag === 'glean-helper'
 ```
 
 before `app.mount()`. Or just keep the tag in `index.html` outside the Vue root.
+
+---
+
+## Page context
+
+The widget can automatically capture page context and send it alongside every user message. This gives the Glean agent awareness of what the user is looking at — no manual copy-pasting needed.
+
+### What gets captured
+
+| Field | Source | Example |
+|-------|--------|---------|
+| **URL** | Browser `location.href` | `https://myapp.com/projects/42` |
+| **Page title** | `document.title` | `Project Dashboard` |
+| **HTML snippet** | Sanitised page body (or `[data-glean-context]` element) | Cleaned HTML, up to 8 KB |
+| **Active view** | Host app via `postMessage` | `3D View - Level 2` |
+| **Metadata** | Host app via `postMessage` | `{ "selectedElements": "3 walls" }` |
+
+The HTML is automatically sanitised: `<script>`, `<style>`, `<svg>`, `<noscript>`, and the widget itself are stripped. Class names, inline styles, and `data-*` attributes are removed. What remains is the semantic structure — headings, tables, text content, links, inputs.
+
+### How the agent receives it
+
+Context is prepended to the user's message as a structured text block:
+
+```
+[Page Context]
+URL: https://myapp.com/projects/42
+Page title: Project Dashboard
+Active view: Floor Plan - Level 2
+selectedElements: 3 walls, 1 door
+HTML snippet:
+<h2>Tower A</h2>
+<table><tr><td>Status</td><td>In Review</td></tr></table>
+[End Context]
+
+Why are these tasks overdue?
+```
+
+No special API features are required — the agent sees this as part of the message input.
+
+### Choosing which context to send
+
+By default all fields are sent. Use the `page-context` attribute to pick only what's useful:
+
+```html
+<!-- Send everything (default) -->
+<glean-helper app-id="myapp" />
+
+<!-- URL and page title only — fast, low noise -->
+<glean-helper app-id="myapp" page-context="url,pageTitle" />
+
+<!-- URL, title, and metadata from postMessage — skip HTML -->
+<glean-helper app-id="myapp" page-context="url,pageTitle,activeView,metadata" />
+
+<!-- Disable entirely for .NET / Revit hosts where the HTML is just the widget shell -->
+<glean-helper app-id="core-swap" agent-id="..." page-context="false" />
+```
+
+Available fields: `url`, `pageTitle`, `html`, `activeView`, `metadata`.
+
+### Sending context from native host apps (postMessage)
+
+Native host apps can push structured context via `postMessage` instead of (or alongside) browser-collected HTML:
+
+```js
+webview.postMessage(JSON.stringify({
+  type: "glean-context",
+  payload: {
+    activeView: "Floor Plan - Level 2",
+    pageTitle: "My Revit Project",
+    metadata: {
+      selectedElements: "3 walls, 1 door",
+      documentPath: "C:/Projects/TowerA.rvt"
+    }
+  }
+}));
+```
+
+Context is merged with any browser-collected data. It can be sent at any time — the widget takes the latest snapshot when the user sends a message.
+
+### Targeted HTML capture
+
+If only part of the page is relevant, mark it with `data-glean-context`:
+
+```html
+<div data-glean-context>
+  <h2>Project: Tower A</h2>
+  <table>...</table>
+</div>
+```
+
+When present, this takes priority over the full `document.body`.
+
+### Glean agent instructions
+
+When configuring your Glean agent, include guidance like:
+
+> The user's message may begin with a `[Page Context]` block containing the URL, page title, visible HTML, and app-specific metadata from the page they are viewing. Use this context to ground your answers — reference specific elements, values, or states visible on the page when relevant. If no context block is present, answer normally.
+
+---
+
+# Embedding in a Revit addin (WebView2)
+
+The `RevitPlugin/` folder contains a ready-to-copy integration that floats a Glean chat widget over Revit using WebView2. It runs on a separate STA thread so it stays interactive even during `ShowDialog()` modal workflows.
+
+## What you get
+
+A borderless, topmost WPF window that floats over Revit:
+- **Closed** (68×68): just the FAB launcher button
+- **Open** (370×542): expands to the chat panel
+
+It minimizes/restores with Revit automatically.
+
+## Prerequisites
+
+- WebView2 runtime installed (pre-installed on Windows 11; [download](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) for older machines)
+- GleanInside dev servers running: `npm run dev` from the repo root
+- A Glean agent ID (get one from the Glean admin UI)
+
+## Step 1 — Add the NuGet package
+
+Add to your `.csproj`:
+
+```xml
+<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
+```
+
+## Step 2 — Copy the widget files
+
+Copy these two files from `RevitPlugin/GleanInside.RevitPlugin/UI/` into your project's UI folder:
+
+```
+GleanFabWidget.xaml
+GleanFabWidget.xaml.cs
+```
+
+Then make two changes:
+
+1. **Namespace** — update the namespace in both files to match your project:
+
+   In `GleanFabWidget.xaml`, change the `x:Class` attribute:
+   ```xml
+   x:Class="YourNamespace.UI.GleanFabWidget"
+   ```
+
+   In `GleanFabWidget.xaml.cs`, change the namespace declaration:
+   ```csharp
+   namespace YourNamespace.UI
+   ```
+
+2. **Agent ID** — in `GleanFabWidget.xaml.cs`, replace `YOUR_AGENT_ID` with your Glean agent ID:
+   ```csharp
+   private const string WidgetUrl = "http://localhost:3000/widget.html?agentId=YOUR_AGENT_ID";
+   ```
+
+## Step 3 — Wire it into your command
+
+Add two lines to your `IExternalCommand.Execute()`:
+
+```csharp
+using YourNamespace.UI;
+
+public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+{
+    GleanFabWidget.EnsureVisible();   // ← show the widget
+
+    // ... your existing command logic, ShowDialog() calls, etc. ...
+
+    GleanFabWidget.HideInstance();    // ← hide when your workflow ends
+    return Result.Succeeded;
+}
+```
+
+`EnsureVisible()` is idempotent — calling it multiple times won't spawn duplicate windows. If you want the widget to stay visible across commands, just call `EnsureVisible()` without `HideInstance()`.
+
+## Step 4 — Run and test
+
+```bash
+npm run dev
+```
+
+Then build your Revit addin, start Revit, and trigger your command.
+
+## Revit context (built-in)
+
+The `OpenChatCommand` automatically pushes Revit context to the widget when it fires. The agent receives:
+
+- **Active view** — view type and name (e.g. `FloorPlan - Level 1`)
+- **Document title** and file path
+- **Selected elements** — count and category breakdown (e.g. `3 (Walls: 2, Doors: 1)`)
+
+To push updated context from any other command, call:
+
+```csharp
+RevitContextHelper.PushToWidget(commandData.Application);
+```
+
+### Addin context (your plugin's state)
+
+Use `AddinContext` to register your plugin's UI state — which window is open, what workflow the user is in, what data is loaded. This context is automatically merged with Revit API data whenever `PushToWidget` is called.
+
+```csharp
+// When your plugin opens a window
+AddinContext.Set("activeWindow", "Shear Wall Editor");
+AddinContext.Set("workflow", "Wall placement — step 2 of 4");
+AddinContext.Set("loadedProject", "Tower A — Zone 3");
+RevitContextHelper.PushToWidget(uiApp);
+
+// When the window closes
+AddinContext.Clear("activeWindow");
+AddinContext.Clear("workflow");
+RevitContextHelper.PushToWidget(uiApp);
+
+// When your plugin shuts down entirely
+AddinContext.ClearAll();
+```
+
+The agent then sees context like:
+```
+Active view: FloorPlan - Level 1
+documentTitle: Tower A.rvt
+activeWindow: Shear Wall Editor
+workflow: Wall placement — step 2 of 4
+loadedProject: Tower A — Zone 3
+selectedElements: 3 (Walls: 2, Doors: 1)
+```
+
+`AddinContext` is thread-safe and persists across commands. Set it when state changes, clear it when it's no longer relevant.
+
+### Sending context without the Revit API
+
+If you need to push context outside of a Revit API context (no `UIApplication` available), use `SendContext` directly:
+
+```csharp
+GleanFabWidget.SendContext(
+    activeView: "Custom View",
+    metadata: new Dictionary<string, string>
+    {
+        ["activeWindow"] = "Settings Dialog",
+        ["phaseFilter"] = "New Construction"
+    }
+);
+```
+
+See the [Page context](#page-context) section for the full payload shape.
+
+## Optional: Adjust viewport size
+
+In `GleanFabWidget.xaml.cs`, change the constants:
+
+```csharp
+private const double ClosedWidth = 68;
+private const double ClosedHeight = 68;
+private const double OpenWidth = 370;
+private const double OpenHeight = 542;
+```
+
+## Revit troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Revit crashes on startup | Widget created from `OnStartup` or `ApplicationInitialized` | Only call `EnsureVisible()` from `IExternalCommand.Execute()` |
+| Widget not clickable during `ShowDialog()` | Widget on same thread as modal dialog | Already handled — `EnsureVisible()` spawns a separate STA thread |
+| Widget not clickable at all | `AllowsTransparency="True"` on the Window | Don't add `AllowsTransparency` — breaks WebView2 mouse input (WPF airspace problem) |
+| "Loading Glean..." stuck forever | WebView2 init failed silently | Check the overlay text for error details; verify WebView2 runtime is installed |
+| ERR_CONNECTION_REFUSED | Dev servers not running | Run `npm run dev` from the repo root |
+| Widget stays on screen when Revit minimizes | No window owner set | Already handled — `EnsureVisible()` sets Revit's HWND as owner |
+
+## Revit file reference
+
+| File | Purpose |
+|---|---|
+| `RevitPlugin/.../UI/GleanFabWidget.xaml` | WPF window — borderless, topmost, 68×68 start size |
+| `RevitPlugin/.../UI/GleanFabWidget.xaml.cs` | STA thread lifecycle, WebView2 init, dynamic resize via postMessage |
+| `RevitPlugin/widget.html` | Host page for `<glean-helper>` — shadow DOM overrides + MutationObserver resize bridge |
+| `RevitPlugin/Deploy-Addin.ps1` | Copies addin manifest + DLLs to Revit's addins folder |
 
 ---
 

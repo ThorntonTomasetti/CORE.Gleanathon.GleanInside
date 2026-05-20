@@ -12,11 +12,20 @@ export interface ChatMessage {
   citations?: Citation[]
 }
 
+export interface PageContext {
+  url?: string
+  pageTitle?: string
+  htmlSnippet?: string
+  activeView?: string
+  metadata?: Record<string, string>
+}
+
 export interface ChatRequest {
   appId: string
   message: string
   conversationId?: string
   agentId?: string
+  context?: PageContext
 }
 
 export interface ChatResponse {

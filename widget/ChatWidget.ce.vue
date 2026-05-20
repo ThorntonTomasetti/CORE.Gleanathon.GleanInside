@@ -73,12 +73,15 @@
       </div>
 
       <form class="panel-input" @submit.prevent="send">
-        <input
+        <textarea
+          ref="inputEl"
           v-model="draft"
           :disabled="pending"
           placeholder="Ask Glean…"
-          autocomplete="off"
-        />
+          rows="1"
+          @input="autoGrow"
+          @keydown.enter.exact.prevent="send"
+        ></textarea>
         <button type="submit" :disabled="pending || !draft.trim()" aria-label="Send">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
@@ -93,6 +96,7 @@
   import { computed, nextTick, ref, watch } from 'vue'
   import { useDragResize } from './composables/useDragResize'
   import { useMarkdown } from './composables/useMarkdown'
+  import { usePageContext } from './composables/usePageContext'
   import { postChat } from './api'
   import type { ChatMessage } from './types'
 
@@ -101,13 +105,22 @@
     apiUrl?: string
     title?: string
     agentId?: string
+    pageContext?: string
   }>()
 
   const apiUrl = () => props.apiUrl || '/api/chat'
   const title = computed(() => props.title || 'Glean Helper')
+  function resolveAgentId (): string | undefined {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('agentId')
+      || localStorage.getItem('glean-agent-id')
+      || props.agentId
+      || undefined
+  }
 
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
+  const { snapshot: getPageContext } = usePageContext(props.pageContext)
 
   const open = ref(false)
   const draft = ref('')
@@ -116,11 +129,26 @@
   const messages = ref<ChatMessage[]>([])
   const conversationId = ref<string | undefined>(undefined)
   const scroller = ref<HTMLElement | null>(null)
+  const inputEl = ref<HTMLTextAreaElement | null>(null)
+
+  function autoGrow () {
+    const el = inputEl.value
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+  }
 
   watch(messages, async () => {
     await nextTick()
     if (scroller.value) scroller.value.scrollTop = scroller.value.scrollHeight
   }, { deep: true })
+
+  watch(open, async (isOpen) => {
+    if (isOpen) {
+      await nextTick()
+      autoGrow()
+    }
+  })
 
   async function send () {
     const text = draft.value.trim()
@@ -132,13 +160,15 @@
     error.value = null
     messages.value.push({ role: 'user', text })
     draft.value = ''
+    if (inputEl.value) inputEl.value.style.height = 'auto'
     pending.value = true
     try {
       const res = await postChat(apiUrl(), {
         appId: props.appId,
         message: text,
         conversationId: conversationId.value,
-        agentId: props.agentId,
+        agentId: resolveAgentId(),
+        context: getPageContext(),
       })
       conversationId.value = res.conversationId
       messages.value.push({ role: 'assistant', text: res.answer, citations: res.citations })
@@ -410,13 +440,14 @@
   /* ── Input area ── */
   .panel-input {
     display: flex;
+    align-items: flex-end;
     gap: 8px;
     padding: 12px;
     background: white;
     border-top: 1px solid #e4e5f7;
     flex-shrink: 0;
   }
-  .panel-input input {
+  .panel-input textarea {
     flex: 1;
     padding: 9px 12px;
     border: 1.5px solid #e4e5f7;
@@ -427,9 +458,13 @@
     color: #1a1a2e;
     background: #f9f9ff;
     transition: border-color 0.15s;
+    resize: none;
+    overflow-y: auto;
+    line-height: 1.4;
+    max-height: 120px;
   }
-  .panel-input input::placeholder { color: #9899b8; }
-  .panel-input input:focus { border-color: #343CED; background: white; }
+  .panel-input textarea::placeholder { color: #9899b8; }
+  .panel-input textarea:focus { border-color: #343CED; background: white; }
   .panel-input button {
     width: 38px;
     height: 38px;

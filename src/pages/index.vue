@@ -1,6 +1,6 @@
 <template>
   <HelloWorld />
-  <glean-helper app-id="gleaninside" />
+  <glean-helper app-id="gleaninside" agent-id="532b0e6b1e2b47feae7a373fca9fc1da" />
 </template>
 
 <script lang="ts" setup>
