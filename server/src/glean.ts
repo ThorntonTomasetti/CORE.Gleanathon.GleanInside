@@ -12,16 +12,42 @@ export interface GleanChatResult {
   conversationId?: string
 }
 
+export interface PageContext {
+  url?: string
+  pageTitle?: string
+  htmlSnippet?: string
+  activeView?: string
+  metadata?: Record<string, string>
+}
+
 interface GleanChatArgs {
   message: string
   conversationId?: string
   filters: GleanScopeFilters
+  context?: PageContext
 }
 
 interface GleanAgentRunArgs {
   agentId: string
   message: string
   conversationId?: string
+  context?: PageContext
+}
+
+function formatMessageWithContext (message: string, context?: PageContext): string {
+  if (!context) return message
+  const lines: string[] = []
+  if (context.url) lines.push(`URL: ${context.url}`)
+  if (context.pageTitle) lines.push(`Page title: ${context.pageTitle}`)
+  if (context.activeView) lines.push(`Active view: ${context.activeView}`)
+  if (context.metadata) {
+    for (const [k, v] of Object.entries(context.metadata)) {
+      lines.push(`${k}: ${v}`)
+    }
+  }
+  if (context.htmlSnippet) lines.push(`HTML snippet:\n${context.htmlSnippet}`)
+  if (!lines.length) return message
+  return `[Page Context]\n${lines.join('\n')}\n[End Context]\n\n${message}`
 }
 
 /**
@@ -39,9 +65,10 @@ export async function gleanChat (args: GleanChatArgs): Promise<GleanChatResult> 
     throw new Error('GLEAN_BASE_URL and GLEAN_API_KEY must be set')
   }
 
+  const enrichedMessage = formatMessageWithContext(args.message, args.context)
   const body: Record<string, unknown> = {
     messages: [
-      { author: 'USER', fragments: [{ text: args.message }] },
+      { author: 'USER', fragments: [{ text: enrichedMessage }] },
     ],
     inclusions: buildInclusions(args.filters),
   }
@@ -77,9 +104,10 @@ export async function gleanAgentRun (args: GleanAgentRunArgs): Promise<GleanChat
     throw new Error('GLEAN_BASE_URL and GLEAN_API_KEY must be set')
   }
 
+  const enrichedMessage = formatMessageWithContext(args.message, args.context)
   const body: Record<string, unknown> = {
     agent_id: args.agentId,
-    input: { message: args.message },
+    input: { message: enrichedMessage },
   }
   if (args.conversationId) body.chat_id = args.conversationId
 

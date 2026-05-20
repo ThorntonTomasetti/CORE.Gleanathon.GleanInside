@@ -93,6 +93,7 @@
   import { computed, nextTick, ref, watch } from 'vue'
   import { useDragResize } from './composables/useDragResize'
   import { useMarkdown } from './composables/useMarkdown'
+  import { usePageContext } from './composables/usePageContext'
   import { postChat } from './api'
   import type { ChatMessage } from './types'
 
@@ -101,16 +102,22 @@
     apiUrl?: string
     title?: string
     agentId?: string
+    pageContext?: string
   }>()
 
   const apiUrl = () => props.apiUrl || '/api/chat'
   const title = computed(() => props.title || 'Glean Helper')
-  const resolvedAgentId = computed(() =>
-    props.agentId ?? new URLSearchParams(window.location.search).get('agentId') ?? undefined
-  )
+  function resolveAgentId (): string | undefined {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('agentId')
+      || localStorage.getItem('glean-agent-id')
+      || props.agentId
+      || undefined
+  }
 
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
+  const { snapshot: getPageContext } = usePageContext(props.pageContext)
 
   const open = ref(false)
   const draft = ref('')
@@ -141,7 +148,8 @@
         appId: props.appId,
         message: text,
         conversationId: conversationId.value,
-        agentId: resolvedAgentId.value,
+        agentId: resolveAgentId(),
+        context: getPageContext(),
       })
       conversationId.value = res.conversationId
       messages.value.push({ role: 'assistant', text: res.answer, citations: res.citations })
