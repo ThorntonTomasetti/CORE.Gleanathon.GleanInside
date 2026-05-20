@@ -478,22 +478,54 @@ To push updated context from any other command, call:
 RevitContextHelper.PushToWidget(commandData.Application);
 ```
 
-### Sending custom context
+### Addin context (your plugin's state)
 
-For additional data beyond what `RevitContextHelper` collects, use `SendContext` directly:
+Use `AddinContext` to register your plugin's UI state — which window is open, what workflow the user is in, what data is loaded. This context is automatically merged with Revit API data whenever `PushToWidget` is called.
+
+```csharp
+// When your plugin opens a window
+AddinContext.Set("activeWindow", "Shear Wall Editor");
+AddinContext.Set("workflow", "Wall placement — step 2 of 4");
+AddinContext.Set("loadedProject", "Tower A — Zone 3");
+RevitContextHelper.PushToWidget(uiApp);
+
+// When the window closes
+AddinContext.Clear("activeWindow");
+AddinContext.Clear("workflow");
+RevitContextHelper.PushToWidget(uiApp);
+
+// When your plugin shuts down entirely
+AddinContext.ClearAll();
+```
+
+The agent then sees context like:
+```
+Active view: FloorPlan - Level 1
+documentTitle: Tower A.rvt
+activeWindow: Shear Wall Editor
+workflow: Wall placement — step 2 of 4
+loadedProject: Tower A — Zone 3
+selectedElements: 3 (Walls: 2, Doors: 1)
+```
+
+`AddinContext` is thread-safe and persists across commands. Set it when state changes, clear it when it's no longer relevant.
+
+### Sending context without the Revit API
+
+If you need to push context outside of a Revit API context (no `UIApplication` available), use `SendContext` directly:
 
 ```csharp
 GleanFabWidget.SendContext(
-    activeView: "Floor Plan - Level 2",
+    activeView: "Custom View",
     metadata: new Dictionary<string, string>
     {
-        ["phaseFilter"] = "New Construction",
-        ["workset"] = "Structural"
+        ["activeWindow"] = "Settings Dialog",
+        ["phaseFilter"] = "New Construction"
     }
 );
 ```
 
-Context is merged with any prior data and sent with the next chat message. See the [Page context](#page-context) section for the full payload shape.
+See the [Page context](#page-context) section for the full payload shape.
 
 ## Optional: Adjust viewport size
 

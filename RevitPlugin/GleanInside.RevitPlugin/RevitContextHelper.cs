@@ -15,11 +15,12 @@ namespace GleanInside.RevitPlugin
             var doc = uiDoc.Document;
             var view = doc.ActiveView;
 
-            var metadata = new Dictionary<string, string>
-            {
-                ["documentTitle"] = doc.Title ?? "",
-                ["documentPath"] = doc.PathName ?? "(not saved)",
-            };
+            // Start with addin-registered context
+            var metadata = AddinContext.Snapshot();
+
+            // Layer on Revit API context
+            metadata["documentTitle"] = doc.Title ?? "";
+            metadata["documentPath"] = doc.PathName ?? "(not saved)";
 
             var selected = uiDoc.Selection.GetElementIds();
             if (selected.Count > 0)
