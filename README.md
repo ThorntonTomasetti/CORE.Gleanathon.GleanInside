@@ -8,6 +8,7 @@ An injectable helper chatbot backed by Glean. Drop one `<script>` tag and one `<
 - `server/` — Node/Express backend that holds the Glean API key and calls Glean on the widget's behalf.
 - `src/` — a Vue/Vuetify demo host that embeds the widget for local development.
 - `demo/vanilla.html` — a plain-HTML page proving the widget works without any framework.
+- `RevitPlugin/` — C# Revit addin that hosts the widget in a WebView2 floating window.
 
 ## How the pieces fit together
 
@@ -257,6 +258,135 @@ app.config.compilerOptions.isCustomElement = tag => tag === 'glean-helper'
 ```
 
 before `app.mount()`. Or just keep the tag in `index.html` outside the Vue root.
+
+---
+
+# Embedding in a Revit addin (WebView2)
+
+The `RevitPlugin/` folder contains a ready-to-copy integration that floats a Glean chat widget over Revit using WebView2. It runs on a separate STA thread so it stays interactive even during `ShowDialog()` modal workflows.
+
+## What you get
+
+A borderless, topmost WPF window that floats over Revit:
+- **Closed** (68×68): just the FAB launcher button
+- **Open** (370×542): expands to the chat panel
+
+It minimizes/restores with Revit automatically.
+
+## Prerequisites
+
+- WebView2 runtime installed (pre-installed on Windows 11; [download](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) for older machines)
+- GleanInside dev servers running: `npm run dev` from the repo root
+- A Glean agent ID (get one from the Glean admin UI)
+
+## Step 1 — Add the NuGet package
+
+Add to your `.csproj`:
+
+```xml
+<PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2592.51" />
+```
+
+## Step 2 — Copy the widget files
+
+Copy these two files from `RevitPlugin/GleanInside.RevitPlugin/UI/` into your project's UI folder:
+
+```
+GleanFabWidget.xaml
+GleanFabWidget.xaml.cs
+```
+
+Then make two changes:
+
+1. **Namespace** — update the namespace in both files to match your project:
+
+   In `GleanFabWidget.xaml`, change the `x:Class` attribute:
+   ```xml
+   x:Class="YourNamespace.UI.GleanFabWidget"
+   ```
+
+   In `GleanFabWidget.xaml.cs`, change the namespace declaration:
+   ```csharp
+   namespace YourNamespace.UI
+   ```
+
+2. **Agent ID** — in `GleanFabWidget.xaml.cs`, replace `YOUR_AGENT_ID` with your Glean agent ID:
+   ```csharp
+   private const string WidgetUrl = "http://localhost:3000/widget.html?agentId=YOUR_AGENT_ID";
+   ```
+
+## Step 3 — Wire it into your command
+
+Add two lines to your `IExternalCommand.Execute()`:
+
+```csharp
+using YourNamespace.UI;
+
+public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
+{
+    GleanFabWidget.EnsureVisible();   // ← show the widget
+
+    // ... your existing command logic, ShowDialog() calls, etc. ...
+
+    GleanFabWidget.HideInstance();    // ← hide when your workflow ends
+    return Result.Succeeded;
+}
+```
+
+`EnsureVisible()` is idempotent — calling it multiple times won't spawn duplicate windows. If you want the widget to stay visible across commands, just call `EnsureVisible()` without `HideInstance()`.
+
+## Step 4 — Run and test
+
+```bash
+npm run dev
+```
+
+Then build your Revit addin, start Revit, and trigger your command.
+
+## Optional: Send Revit context into the chat
+
+Use the WebView2 message channel to make the chat context-aware:
+
+**C# → JS:**
+```csharp
+WebView.CoreWebView2.PostWebMessageAsString(JsonSerializer.Serialize(new {
+    type = "glean-context",
+    payload = new { activeView = "Floor Plan - Level 2", metadata = new { selectedElements = "3 walls" } }
+}));
+```
+
+The widget listens for `postMessage` events with `type: "glean-context"` and merges the payload into the context sent with each message. See the [Page context](#page-context) section above for the full payload shape.
+
+## Optional: Adjust viewport size
+
+In `GleanFabWidget.xaml.cs`, change the constants:
+
+```csharp
+private const double ClosedWidth = 68;
+private const double ClosedHeight = 68;
+private const double OpenWidth = 370;
+private const double OpenHeight = 542;
+```
+
+## Revit troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Revit crashes on startup | Widget created from `OnStartup` or `ApplicationInitialized` | Only call `EnsureVisible()` from `IExternalCommand.Execute()` |
+| Widget not clickable during `ShowDialog()` | Widget on same thread as modal dialog | Already handled — `EnsureVisible()` spawns a separate STA thread |
+| Widget not clickable at all | `AllowsTransparency="True"` on the Window | Don't add `AllowsTransparency` — breaks WebView2 mouse input (WPF airspace problem) |
+| "Loading Glean..." stuck forever | WebView2 init failed silently | Check the overlay text for error details; verify WebView2 runtime is installed |
+| ERR_CONNECTION_REFUSED | Dev servers not running | Run `npm run dev` from the repo root |
+| Widget stays on screen when Revit minimizes | No window owner set | Already handled — `EnsureVisible()` sets Revit's HWND as owner |
+
+## Revit file reference
+
+| File | Purpose |
+|---|---|
+| `RevitPlugin/.../UI/GleanFabWidget.xaml` | WPF window — borderless, topmost, 68×68 start size |
+| `RevitPlugin/.../UI/GleanFabWidget.xaml.cs` | STA thread lifecycle, WebView2 init, dynamic resize via postMessage |
+| `RevitPlugin/widget.html` | Host page for `<glean-helper>` — shadow DOM overrides + MutationObserver resize bridge |
+| `RevitPlugin/Deploy-Addin.ps1` | Copies addin manifest + DLLs to Revit's addins folder |
 
 ---
 
