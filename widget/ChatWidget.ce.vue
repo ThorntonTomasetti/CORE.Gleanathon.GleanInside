@@ -154,6 +154,14 @@
   const apiUrl = () => props.apiUrl || '/api/chat'
   const title = computed(() => props.title || 'Glean Helper')
 
+  function resolveAgentId (): string | undefined {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('agentId')
+      || localStorage.getItem('glean-agent-id')
+      || props.agentId
+      || undefined
+  }
+
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
   const { attachment, onFileSelect, clearAttachment } = useAttachment()
@@ -201,6 +209,7 @@
         appId: props.appId,
         message: text,
         conversationId: conversationId.value,
+        agentId: resolveAgentId(),
         ...(pendingAttachment ? { attachment: { name: pendingAttachment.name, type: pendingAttachment.type, data: pendingAttachment.data } } : {}),
       })
       conversationId.value = res.conversationId

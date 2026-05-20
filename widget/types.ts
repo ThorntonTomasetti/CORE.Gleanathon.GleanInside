@@ -22,6 +22,7 @@ export interface ChatRequest {
   appId: string
   message: string
   conversationId?: string
+  agentId?: string
   attachment?: ChatAttachment
 }
 
