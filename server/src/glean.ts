@@ -29,26 +29,70 @@ export async function gleanUploadFile (args: {
   const key = process.env.GLEAN_API_KEY
   if (!base || !key) throw new Error('GLEAN_BASE_URL and GLEAN_API_KEY must be set')
 
+  console.log('[glean] upload file:', { name: args.filename, type: args.mimeType, size: args.data.length })
+
+  const blob = new Blob([new Uint8Array(args.data)], { type: args.mimeType })
   const form = new FormData()
-  form.append('file', new Blob([args.data], { type: args.mimeType }), args.filename)
+  form.append('files', blob, args.filename)
   if (args.chatId) form.append('chatId', args.chatId)
 
-  const res = await fetch(`${base.replace(/\/$/, '')}/rest/api/v1/uploadchatfiles`, {
+  const url = `${base.replace(/\/$/, '')}/rest/api/v1/uploadchatfiles`
+  console.log('[glean] uploading to:', url)
+
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { 'authorization': `Bearer ${key}` },
+    headers: {
+      'authorization': `Bearer ${key}`,
+    },
     body: form,
   })
 
+  const resText = await res.text()
+  console.log('[glean] upload response:', res.status, resText.slice(0, 500))
+
   if (!res.ok) {
-    const text = await res.text().catch(() => '')
-    throw new Error(`Glean uploadchatfiles ${res.status}: ${text || res.statusText}`)
+    throw new Error(`Glean uploadchatfiles ${res.status}: ${resText || res.statusText}`)
   }
 
-  const data = await res.json() as any
-  console.log('[glean] uploadchatfiles response:', JSON.stringify(data))
-  const fileId = data?.fileId ?? data?.id ?? data?.fileIds?.[0]
+  const data = JSON.parse(resText)
+  console.log('[glean] uploadchatfiles parsed:', JSON.stringify(data))
+  const fileId = data?.files?.[0]?.id ?? data?.fileId ?? data?.id ?? data?.fileIds?.[0]
   if (!fileId) throw new Error(`Glean uploadchatfiles: no fileId in response — ${JSON.stringify(data)}`)
   return fileId
+}
+
+/**
+ * Uses the Chat API (which supports images) to produce a text description
+ * of an uploaded file, then forwards the user's question + that description
+ * to the Agents API so guardrails and source scoping are preserved.
+ */
+export async function gleanDescribeAndAsk (args: {
+  agentId: string
+  message: string
+  fileId: string
+  conversationId?: string
+  filters: GleanScopeFilters
+}): Promise<GleanChatResult> {
+  console.log('[glean] describeAndAsk — step 1: describing image', { fileId: args.fileId, agentId: args.agentId })
+
+  const describeResult = await gleanChat({
+    message: 'Describe this image in detail. Focus on UI elements, data values, labels, layout, and any text visible on screen. Return only the description, no commentary.',
+    fileId: args.fileId,
+    filters: args.filters,
+  })
+
+  console.log('[glean] describeAndAsk — step 1 result:', { answer: describeResult.answer.slice(0, 200), conversationId: describeResult.conversationId })
+
+  const imageContext = `[Image Description]\n${describeResult.answer}\n[End Image Description]`
+  const enrichedMessage = `${imageContext}\n\n${args.message}`
+
+  console.log('[glean] describeAndAsk — step 2: forwarding to agent', { agentId: args.agentId, messageLength: enrichedMessage.length })
+
+  return gleanAgentRun({
+    agentId: args.agentId,
+    message: enrichedMessage,
+    conversationId: args.conversationId,
+  })
 }
 
 interface GleanAgentRunArgs {
@@ -72,16 +116,19 @@ export async function gleanChat (args: GleanChatArgs): Promise<GleanChatResult> 
     throw new Error('GLEAN_BASE_URL and GLEAN_API_KEY must be set')
   }
 
-  const fragment: Record<string, unknown> = { text: args.message }
-  if (args.fileId) fragment.citation = { fileId: args.fileId }
+  const message: Record<string, unknown> = {
+    author: 'USER',
+    fragments: [{ text: args.message }],
+  }
+  if (args.fileId) message.uploadedFileIds = [args.fileId]
 
   const body: Record<string, unknown> = {
-    messages: [
-      { author: 'USER', fragments: [fragment] },
-    ],
+    messages: [message],
     inclusions: buildInclusions(args.filters),
   }
   if (args.conversationId) body.chatId = args.conversationId
+
+  console.log('[glean] chat request body:', JSON.stringify(body, null, 2))
 
   const res = await fetch(`${base.replace(/\/$/, '')}/rest/api/v1/chat`, {
     method: 'POST',

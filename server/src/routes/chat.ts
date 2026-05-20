@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { getScope } from '../appScopes.js'
-import { gleanAgentRun, gleanChat, gleanUploadFile } from '../glean.js'
+import { gleanAgentRun, gleanChat, gleanDescribeAndAsk, gleanUploadFile } from '../glean.js'
 
 const Attachment = z.object({
   name: z.string().min(1),
@@ -32,6 +32,8 @@ chatRouter.post('/', async (req, res) => {
   }
 
   try {
+    console.log('[chat] request:', { appId, agentId, hasAttachment: !!attachment, attachmentName: attachment?.name, attachmentType: attachment?.type, dataLength: attachment?.data?.length })
+
     let fileId: string | undefined
     if (attachment) {
       const buffer = Buffer.from(attachment.data, 'base64')
@@ -46,11 +48,16 @@ chatRouter.post('/', async (req, res) => {
       })
     }
 
-    // Chat API is the only surface that supports file attachments (citation on fragment).
-    // Agent API is text-only — fall back to Chat when a file is present.
-    const result = (agentId && !fileId)
-      ? await gleanAgentRun({ agentId, message, conversationId })
-      : await gleanChat({ message, conversationId, fileId, filters: scope.filters })
+    console.log('[chat] routing:', { agentId, fileId, path: agentId && fileId ? 'describeAndAsk' : agentId ? 'agentRun' : 'chat' })
+
+    let result
+    if (agentId && fileId) {
+      result = await gleanDescribeAndAsk({ agentId, message, fileId, conversationId, filters: scope.filters })
+    } else if (agentId) {
+      result = await gleanAgentRun({ agentId, message, conversationId })
+    } else {
+      result = await gleanChat({ message, conversationId, fileId, filters: scope.filters })
+    }
     return res.json({
       answer: result.answer,
       citations: result.citations,
