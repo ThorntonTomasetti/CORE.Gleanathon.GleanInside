@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "version": "0.0.0",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "postinstall": "npm --prefix server install",
     "dev": "concurrently -n web,api -c blue,green --kill-others-on-fail \"vite\" \"npm --prefix server run dev\"",
