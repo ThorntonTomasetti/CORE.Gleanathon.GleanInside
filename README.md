@@ -464,36 +464,19 @@ npm run dev
 
 Then build your Revit addin, start Revit, and trigger your command.
 
-## Revit context (built-in)
+## Optional: Send Revit context into the chat
 
-The `OpenChatCommand` automatically pushes Revit context to the widget when it fires. The agent receives:
+Use the WebView2 message channel to make the chat context-aware:
 
-- **Active view** — view type and name (e.g. `FloorPlan - Level 1`)
-- **Document title** and file path
-- **Selected elements** — count and category breakdown (e.g. `3 (Walls: 2, Doors: 1)`)
-
-To push updated context from any other command, call:
-
+**C# → JS:**
 ```csharp
-RevitContextHelper.PushToWidget(commandData.Application);
+WebView.CoreWebView2.PostWebMessageAsString(JsonSerializer.Serialize(new {
+    type = "glean-context",
+    payload = new { activeView = "Floor Plan - Level 2", metadata = new { selectedElements = "3 walls" } }
+}));
 ```
 
-### Sending custom context
-
-For additional data beyond what `RevitContextHelper` collects, use `SendContext` directly:
-
-```csharp
-GleanFabWidget.SendContext(
-    activeView: "Floor Plan - Level 2",
-    metadata: new Dictionary<string, string>
-    {
-        ["phaseFilter"] = "New Construction",
-        ["workset"] = "Structural"
-    }
-);
-```
-
-Context is merged with any prior data and sent with the next chat message. See the [Page context](#page-context) section for the full payload shape.
+The widget listens for `postMessage` events with `type: "glean-context"` and merges the payload into the context sent with each message. See the [Page context](#page-context) section above for the full payload shape.
 
 ## Optional: Adjust viewport size
 

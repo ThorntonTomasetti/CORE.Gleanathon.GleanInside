@@ -11,7 +11,6 @@ namespace GleanInside.RevitPlugin.Commands
         public Result Execute(ExternalCommandData commandData, ref string message, ElementSet elements)
         {
             GleanFabWidget.EnsureVisible();
-            RevitContextHelper.PushToWidget(commandData.Application);
             return Result.Succeeded;
         }
     }

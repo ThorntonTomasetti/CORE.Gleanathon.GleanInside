@@ -1,6 +1,5 @@
 using Microsoft.Web.WebView2.Core;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Threading;
@@ -55,23 +54,6 @@ namespace GleanInside.RevitPlugin.UI
         public static void HideInstance()
         {
             _fabDispatcher?.Invoke(() => _instance?.Hide());
-        }
-
-        public static void SendContext(string? activeView = null, string? pageTitle = null,
-            Dictionary<string, string>? metadata = null)
-        {
-            _fabDispatcher?.BeginInvoke(() =>
-            {
-                if (_instance?.WebView?.CoreWebView2 == null) return;
-
-                var payload = new Dictionary<string, object?>();
-                if (activeView != null) payload["activeView"] = activeView;
-                if (pageTitle != null) payload["pageTitle"] = pageTitle;
-                if (metadata != null) payload["metadata"] = metadata;
-
-                var msg = JsonSerializer.Serialize(new { type = "glean-context", payload });
-                _instance.WebView.CoreWebView2.PostWebMessageAsString(msg);
-            });
         }
 
         public GleanFabWidget()
