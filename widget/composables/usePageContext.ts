@@ -5,6 +5,15 @@ const HTML_LIMIT = 8000
 const STRIP_TAGS = ['script', 'style', 'svg', 'noscript', 'link', 'meta', 'glean-helper']
 const STRIP_ATTRS = ['class', 'style', 'data-v', 'aria-hidden']
 
+const ALL_FIELDS = new Set(['url', 'pageTitle', 'html', 'activeView', 'metadata'])
+
+function parseFields (setting?: string): Set<string> | null {
+  if (!setting || setting === 'all') return ALL_FIELDS
+  if (setting === 'false' || setting === 'none') return null
+  const fields = new Set(setting.split(',').map(s => s.trim()).filter(s => ALL_FIELDS.has(s)))
+  return fields.size ? fields : null
+}
+
 function sanitizeHtml (root: Element): string {
   const clone = root.cloneNode(true) as Element
 
@@ -29,7 +38,8 @@ function sanitizeHtml (root: Element): string {
     .slice(0, HTML_LIMIT)
 }
 
-export function usePageContext (enabled = true) {
+export function usePageContext (setting?: string) {
+  const fields = parseFields(setting)
   const context: PageContext = reactive({})
 
   function collectBrowserContext () {
@@ -73,27 +83,27 @@ export function usePageContext (enabled = true) {
   }
 
   onMounted(() => {
-    if (!enabled) return
+    if (!fields) return
     collectBrowserContext()
-    collectHtmlSnippet()
+    if (fields.has('html')) collectHtmlSnippet()
     window.addEventListener('message', onHostMessage)
   })
 
   onUnmounted(() => {
-    if (!enabled) return
+    if (!fields) return
     window.removeEventListener('message', onHostMessage)
   })
 
   function snapshot (): PageContext | undefined {
-    if (!enabled) return undefined
+    if (!fields) return undefined
     collectBrowserContext()
-    collectHtmlSnippet()
+    if (fields.has('html')) collectHtmlSnippet()
     const out: PageContext = {}
-    if (context.url) out.url = context.url
-    if (context.pageTitle) out.pageTitle = context.pageTitle
-    if (context.htmlSnippet) out.htmlSnippet = context.htmlSnippet
-    if (context.activeView) out.activeView = context.activeView
-    if (context.metadata && Object.keys(context.metadata).length) out.metadata = { ...context.metadata }
+    if (fields.has('url') && context.url) out.url = context.url
+    if (fields.has('pageTitle') && context.pageTitle) out.pageTitle = context.pageTitle
+    if (fields.has('html') && context.htmlSnippet) out.htmlSnippet = context.htmlSnippet
+    if (fields.has('activeView') && context.activeView) out.activeView = context.activeView
+    if (fields.has('metadata') && context.metadata && Object.keys(context.metadata).length) out.metadata = { ...context.metadata }
     return Object.keys(out).length ? out : undefined
   }
 

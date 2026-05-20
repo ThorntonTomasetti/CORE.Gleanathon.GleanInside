@@ -182,7 +182,7 @@ Add two HTML tags somewhere the browser will load them — typically right befor
 | `api-url`      | yes      | Full URL of the gleanathon backend's chat endpoint. Include `/api/chat`.                     |
 | `agent-id`     | no       | If set, routes through Glean Agents API instead of plain Chat.                               |
 | `title`        | no       | Custom heading text in the chat panel. Defaults to `"Helper"`.                               |
-| `page-context` | no       | Set to `"false"` to disable automatic page context collection. Defaults to enabled.          |
+| `page-context` | no       | Comma-separated list of context fields to send: `url`, `pageTitle`, `html`, `activeView`, `metadata`. Defaults to all. Set to `"false"` or `"none"` to disable entirely. |
 
 The widget renders a fixed-position floating button in the bottom-right corner of the page, so the placement of the `<glean-helper>` tag in the DOM doesn't matter — anywhere inside `<body>` works.
 
@@ -320,13 +320,25 @@ Why are these tasks overdue?
 
 No special API features are required — the agent sees this as part of the message input.
 
-### Disabling context for .NET / desktop hosts
+### Choosing which context to send
 
-Apps embedded in WebView2 (Revit, WPF, etc.) where the page HTML is just the widget shell should disable page context to avoid confusing the agent:
+By default all fields are sent. Use the `page-context` attribute to pick only what's useful:
 
 ```html
+<!-- Send everything (default) -->
+<glean-helper app-id="myapp" />
+
+<!-- URL and page title only — fast, low noise -->
+<glean-helper app-id="myapp" page-context="url,pageTitle" />
+
+<!-- URL, title, and metadata from postMessage — skip HTML -->
+<glean-helper app-id="myapp" page-context="url,pageTitle,activeView,metadata" />
+
+<!-- Disable entirely for .NET / Revit hosts where the HTML is just the widget shell -->
 <glean-helper app-id="core-swap" agent-id="..." page-context="false" />
 ```
+
+Available fields: `url`, `pageTitle`, `html`, `activeView`, `metadata`.
 
 ### Sending context from native host apps (postMessage)
 

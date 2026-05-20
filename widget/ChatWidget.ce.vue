@@ -118,8 +118,7 @@
 
   const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
-  const contextEnabled = props.pageContext !== 'false'
-  const { snapshot: getPageContext } = usePageContext(contextEnabled)
+  const { snapshot: getPageContext } = usePageContext(props.pageContext)
 
   const open = ref(false)
   const draft = ref('')
