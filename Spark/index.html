@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Glean AI Assistant</title>
+
+  <!-- Glean Web SDK — replace GLEAN_APP_DOMAIN with your actual domain -->
+  <!-- e.g. app.glean.com OR thorntontomasetti.glean.com -->
+  <script defer src="https://app.glean.com/embedded-search-latest.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0f1117;
+      --surface:   #181c27;
+      --border:    #2a2f42;
+      --accent:    #4f7fff;
+      --accent2:   #7c5cfc;
+      --text:      #e8eaf0;
+      --muted:     #7a8099;
+      --radius:    12px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 24px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .logo-mark {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: -0.5px;
+      flex-shrink: 0;
+    }
+
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.01em;
+    }
+
+    header p {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+    }
+
+    .badge {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      background: rgba(79,127,255,0.12);
+      border: 1px solid rgba(79,127,255,0.25);
+      padding: 3px 9px;
+      border-radius: 20px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    /* ── Chat container ── */
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #glean-app {
+      flex: 1;
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 8px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="logo-mark">G</div>
+    <div>
+      <h1>Glean AI Assistant</h1>
+      <p>Ask anything about your company's content</p>
+    </div>
+    <span class="badge">AI</span>
+  </header>
+
+  <main>
+    <div id="glean-app"></div>
+  </main>
+
+  <footer>Powered by Glean · Thornton Tomasetti</footer>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var attempts = 0;
+
+      function tryInit() {
+        // Support both SDK namespaces
+        var sdk = window.GleanWebSDK || window.EmbeddedSearch;
+
+        if (sdk && typeof sdk.renderChat === 'function') {
+          sdk.renderChat(document.getElementById('glean-app'), {
+            agentId: "42349c7312dd4630aae2c75daa64803b"
+            // TODO: add auth token / SSO config here (Step 4 of Glean embed instructions)
+            // backend: "thorntontomasetti-be.glean.com"  // uncomment if needed
+          });
+        } else if (attempts < 20) {
+          attempts++;
+          setTimeout(tryInit, 300);
+        }
+      }
+
+      tryInit();
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,94 @@
+{
+    "version": "1.0",
+    "themeOverrides": {
+		"other": {
+      "forceColorScheme": "light"
+    },
+        "defaultRadius": "0",
+        "fontFamily": "'Times New Roman', serif",
+        "fontSizes": {
+            "xs": "0.75rem",
+            "sm": "0.875rem",
+            "md": "1rem",
+            "lg": "1.25rem",
+            "xl": "1.5rem",
+            "2xl": "2rem"
+        },
+        "primaryColor": "gray",
+		"colors": {
+			"gray": [
+				"#f8f6f1",
+				"#f1ede3",
+				"#ebe5d8",
+				"#cdc09d",
+				"#b9a87b",
+				"#a99162",
+				"#9e8652",
+				"#8a7545",
+				"#7e6a3e",
+				"#715f37"
+			]
+		},
+        "components": {
+            "AppBuilderAppShellTemplatePage": {
+                "defaultProps": {
+					 "bg": "#f5f0e8",
+                    "headerHeight": {
+                        "base": "4em",
+                        "md": "4em"
+                    },
+                    "navbarBreakpoint": "md",
+                    "navbarWidth": {
+                        "md": 300,
+                        "lg": 350
+                    },
+                    "columns": 3,
+                    "rows": 3,
+                    "rightColumns": 1,
+                    "bottomRows": 1,
+                    "bottomFullWidth": false
+                }
+            },
+			"Paper": {
+				"defaultProps": {
+					"withBorder": false
+				}
+			},
+			"Text": {
+				"defaultProps": {
+					"fw": "300",
+					"size": "sm"
+				}
+			},
+			"AppBuilderImage": {
+				"defaultProps": {
+					"withBorder": false
+				}
+			},
+			"ViewportIcons": {
+				"defaultProps": {
+					"color": "#670000",
+					"enableArBtn": false,
+					"enableCamerasBtn": false,
+					"enableFullscreenBtn": true,
+					"enableZoomBtn": true,
+                    "enableHistoryButtons": false,
+                    "enableResetButton": true,
+                    "enableImportExportButtons": false,
+				    "enableHistoryMenuButton": false
+
+				}
+			},
+            "ViewportBranding": {
+                "defaultProps": {
+                "light": {
+                    "logo": "https://shapediverdownloads.s3.us-east-1.amazonaws.com/themes/fakelogo.jpg"
+                },
+                "dark": {
+                    "logo": "https://shapediverdownloads.s3.us-east-1.amazonaws.com/themes/fakelogo.jpg"
+                }
+                }
+            }
+        }
+    }
+}

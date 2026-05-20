@@ -60,3 +60,9 @@ coverage/
 .temp/
 .tmp/
 ShapeDiver/CLAUDE.md
+/ShapeDiver/ChatbotComponent/.claude
+/ShapeDiver/ChatbotComponent/ChatbotComponent/bin
+/ShapeDiver/ChatbotComponent/.vs
+/ShapeDiver/ChatbotComponent/ChatbotComponent/obj
+/ShapeDiver/ChatbotComponent/ChatbotComponent/.vscode
+ShapeDiver/ChatbotComponent/CLAUDE.md
