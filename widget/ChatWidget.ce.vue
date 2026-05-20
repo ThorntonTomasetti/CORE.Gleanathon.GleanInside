@@ -1,30 +1,13 @@
 <template>
   <div class="root">
-    <button
-      v-if="!open"
-      class="launcher"
-      aria-label="Open Glean helper"
-      @click="open = true"
-    >
-      <!-- Glean G logomark -->
-      <svg viewBox="-2 25 92 112" width="26" height="26" aria-hidden="true" fill="white">
-        <path fill-rule="evenodd" clip-rule="evenodd" d="M50.3849 39.9032L60.3505 27.2256L72.4436 36.6161L62.5509 49.201C67.6576 55.2704 70.7312 63.0876 70.7312 71.6184C70.7312 90.93 54.9802 106.585 35.5502 106.585C16.1202 106.585 0.369141 90.9299 0.369141 71.6184C0.369141 52.307 16.1202 36.6519 35.5502 36.6519C40.8505 36.6519 45.8771 37.8168 50.3849 39.9032ZM35.5502 91.5675C24.465 91.5675 15.4787 82.636 15.4787 71.6184C15.4787 60.6009 24.465 51.6693 35.5502 51.6693C46.6354 51.6693 55.6217 60.6009 55.6217 71.6184C55.6217 82.636 46.6354 91.5675 35.5502 91.5675ZM71.1406 101.532C70.2693 102.558 69.351 103.537 68.3926 104.489C67.4341 105.435 66.4354 106.341 65.3965 107.201C64.3643 108.06 63.2919 108.873 62.1792 109.639C61.0733 110.405 59.9272 111.131 58.7542 111.797C57.588 112.47 56.3882 113.083 55.1616 113.649C53.9417 114.216 52.6951 114.729 51.4216 115.181C50.1548 115.641 48.8679 116.041 47.5541 116.381C46.2605 116.734 44.9402 117.02 43.6063 117.247C42.2859 117.48 40.9454 117.653 39.5915 117.766C38.2576 117.88 36.9104 117.939 35.5498 117.939C34.1892 117.939 32.842 117.88 31.5082 117.766C30.1542 117.653 28.8137 117.48 27.4933 117.247C26.1595 117.02 24.8391 116.734 23.5455 116.381L19.5976 131.023C21.3135 131.483 23.0696 131.869 24.8458 132.176C26.5951 132.482 28.378 132.715 30.181 132.862C31.9505 133.015 33.7401 133.095 35.5498 133.095C37.3595 133.095 39.1491 133.015 40.9186 132.862C42.7216 132.715 44.4978 132.482 46.2539 132.176C48.03 131.869 49.7794 131.483 51.502 131.023C53.2447 130.57 54.9606 130.037 56.6362 129.424C58.3319 128.818 59.9875 128.139 61.6095 127.386C63.2383 126.633 64.8335 125.814 66.3818 124.928C67.9368 124.035 69.4516 123.076 70.9194 122.05C72.394 121.031 73.8217 119.951 75.1957 118.805C76.5764 117.66 77.9035 116.46 79.1703 115.201C80.4438 113.942 81.657 112.637 82.8166 111.271C83.9761 109.912 85.0753 108.493 86.1075 107.034L73.6206 98.3406C72.8431 99.4398 72.012 100.506 71.1406 101.532Z"/>
-      </svg>
-    </button>
-
-    <div v-else class="panel" :class="{ dragging }" role="dialog" :aria-label="title" :style="panelStyle">
-      <header class="panel-header" @pointerdown="onDragStart">
+    <div class="panel" role="region" :aria-label="title">
+      <header class="panel-header">
         <div class="header-brand">
           <svg viewBox="-2 25 92 112" width="16" height="16" aria-hidden="true" fill="white">
             <path fill-rule="evenodd" clip-rule="evenodd" d="M50.3849 39.9032L60.3505 27.2256L72.4436 36.6161L62.5509 49.201C67.6576 55.2704 70.7312 63.0876 70.7312 71.6184C70.7312 90.93 54.9802 106.585 35.5502 106.585C16.1202 106.585 0.369141 90.9299 0.369141 71.6184C0.369141 52.307 16.1202 36.6519 35.5502 36.6519C40.8505 36.6519 45.8771 37.8168 50.3849 39.9032ZM35.5502 91.5675C24.465 91.5675 15.4787 82.636 15.4787 71.6184C15.4787 60.6009 24.465 51.6693 35.5502 51.6693C46.6354 51.6693 55.6217 60.6009 55.6217 71.6184C55.6217 82.636 46.6354 91.5675 35.5502 91.5675ZM71.1406 101.532C70.2693 102.558 69.351 103.537 68.3926 104.489C67.4341 105.435 66.4354 106.341 65.3965 107.201C64.3643 108.06 63.2919 108.873 62.1792 109.639C61.0733 110.405 59.9272 111.131 58.7542 111.797C57.588 112.47 56.3882 113.083 55.1616 113.649C53.9417 114.216 52.6951 114.729 51.4216 115.181C50.1548 115.641 48.8679 116.041 47.5541 116.381C46.2605 116.734 44.9402 117.02 43.6063 117.247C42.2859 117.48 40.9454 117.653 39.5915 117.766C38.2576 117.88 36.9104 117.939 35.5498 117.939C34.1892 117.939 32.842 117.88 31.5082 117.766C30.1542 117.653 28.8137 117.48 27.4933 117.247C26.1595 117.02 24.8391 116.734 23.5455 116.381L19.5976 131.023C21.3135 131.483 23.0696 131.869 24.8458 132.176C26.5951 132.482 28.378 132.715 30.181 132.862C31.9505 133.015 33.7401 133.095 35.5498 133.095C37.3595 133.095 39.1491 133.015 40.9186 132.862C42.7216 132.715 44.4978 132.482 46.2539 132.176C48.03 131.869 49.7794 131.483 51.502 131.023C53.2447 130.57 54.9606 130.037 56.6362 129.424C58.3319 128.818 59.9875 128.139 61.6095 127.386C63.2383 126.633 64.8335 125.814 66.3818 124.928C67.9368 124.035 69.4516 123.076 70.9194 122.05C72.394 121.031 73.8217 119.951 75.1957 118.805C76.5764 117.66 77.9035 116.46 79.1703 115.201C80.4438 113.942 81.657 112.637 82.8166 111.271C83.9761 109.912 85.0753 108.493 86.1075 107.034L73.6206 98.3406C72.8431 99.4398 72.012 100.506 71.1406 101.532Z"/>
           </svg>
           <span class="panel-title">{{ title }}</span>
         </div>
-        <button class="icon-btn" aria-label="Close" @click="open = false">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-          </svg>
-        </button>
       </header>
 
       <div ref="scroller" class="panel-body">
@@ -64,14 +47,6 @@
         <div v-if="error" class="error">{{ error }}</div>
       </div>
 
-      <div class="resize-grip" @pointerdown.stop="onResizeStart" aria-hidden="true">
-        <svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor">
-          <path d="M9 1L1 9M9 5L5 9M9 9"/>
-          <path d="M9 1L1 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-          <path d="M9 5L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-      </div>
-
       <form class="panel-input" @submit.prevent="send">
         <input
           v-model="draft"
@@ -91,7 +66,6 @@
 
 <script lang="ts" setup>
   import { computed, nextTick, ref, watch } from 'vue'
-  import { useDragResize } from './composables/useDragResize'
   import { useMarkdown } from './composables/useMarkdown'
   import { postChat } from './api'
   import type { ChatMessage } from './types'
@@ -106,10 +80,8 @@
   const apiUrl = () => props.apiUrl || '/api/chat'
   const title = computed(() => props.title || 'Glean Helper')
 
-  const { panelStyle, dragging, onDragStart, onResizeStart } = useDragResize()
   const { renderMarkdown } = useMarkdown()
 
-  const open = ref(false)
   const draft = ref('')
   const pending = ref(false)
   const error = ref<string | null>(null)
@@ -153,61 +125,41 @@
 <style>
   :host {
     all: initial;
+    display: block;
+    width: 100%;
+    height: var(--glean-helper-height, 600px);
     font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   }
 
   /* ── Layout ── */
-  .root { color: #1a1a2e; }
-
-  /* ── Launcher button ── */
-  .launcher {
-    position: fixed;
-    right: 24px;
-    bottom: 24px;
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
-    border: none;
-    background: #343CED;
-    color: white;
-    box-shadow: 0 4px 16px rgba(52, 60, 237, 0.4);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2147483646;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .launcher:hover {
-    transform: scale(1.08);
-    box-shadow: 0 6px 20px rgba(52, 60, 237, 0.5);
+  .root {
+    color: #1a1a2e;
+    width: 100%;
+    height: 100%;
   }
 
   /* ── Panel ── */
   .panel {
-    position: fixed;
+    position: relative;
+    width: 100%;
+    height: 100%;
     background: white;
     border-radius: 16px;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    z-index: 2147483647;
-    user-select: none;
   }
 
   /* ── Header ── */
   .panel-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding: 14px 16px;
     background: #343CED;
     color: white;
     flex-shrink: 0;
-    cursor: grab;
   }
-  .panel.dragging .panel-header { cursor: grabbing; }
   .header-brand {
     display: flex;
     align-items: center;
@@ -218,18 +170,6 @@
     font-size: 14px;
     letter-spacing: 0.01em;
   }
-  .icon-btn {
-    background: transparent;
-    border: none;
-    color: rgba(255, 255, 255, 0.8);
-    cursor: pointer;
-    padding: 2px;
-    display: flex;
-    align-items: center;
-    border-radius: 4px;
-    transition: color 0.1s;
-  }
-  .icon-btn:hover { color: white; }
 
   /* ── Body / messages ── */
   .panel-body {
@@ -390,22 +330,6 @@
     border-radius: 8px;
     border: 1px solid #f5c2c9;
   }
-
-  /* ── Resize grip ── */
-  .resize-grip {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 20px;
-    height: 20px;
-    cursor: nwse-resize;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #c0c2e8;
-    z-index: 1;
-  }
-  .resize-grip:hover { color: #343CED; }
 
   /* ── Input area ── */
   .panel-input {
