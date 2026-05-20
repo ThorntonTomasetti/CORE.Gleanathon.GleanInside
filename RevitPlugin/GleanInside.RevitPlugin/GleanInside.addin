@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RevitAddIns>
+  <AddIn Type="Application">
+    <Name>GleanInside</Name>
+    <Assembly>GleanInside.RevitPlugin.dll</Assembly>
+    <FullClassName>GleanInside.RevitPlugin.App</FullClassName>
+    <!--
+      Generate your own GUID — this one is a placeholder.
+      Must be unique per plugin installation.
+    -->
+    <AddInId>B2C3D4E5-F6A7-8901-BCDE-F12345678901</AddInId>
+    <VendorId>ThorntonTomasetti</VendorId>
+    <VendorDescription>Thornton Tomasetti — Glean AI Assistant</VendorDescription>
+  </AddIn>
+</RevitAddIns>
