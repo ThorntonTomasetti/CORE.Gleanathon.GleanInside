@@ -464,19 +464,68 @@ npm run dev
 
 Then build your Revit addin, start Revit, and trigger your command.
 
-## Optional: Send Revit context into the chat
+## Revit context (built-in)
 
-Use the WebView2 message channel to make the chat context-aware:
+The `OpenChatCommand` automatically pushes Revit context to the widget when it fires. The agent receives:
 
-**C# → JS:**
+- **Active view** — view type and name (e.g. `FloorPlan - Level 1`)
+- **Document title** and file path
+- **Selected elements** — count and category breakdown (e.g. `3 (Walls: 2, Doors: 1)`)
+
+To push updated context from any other command, call:
+
 ```csharp
-WebView.CoreWebView2.PostWebMessageAsString(JsonSerializer.Serialize(new {
-    type = "glean-context",
-    payload = new { activeView = "Floor Plan - Level 2", metadata = new { selectedElements = "3 walls" } }
-}));
+RevitContextHelper.PushToWidget(commandData.Application);
 ```
 
-The widget listens for `postMessage` events with `type: "glean-context"` and merges the payload into the context sent with each message. See the [Page context](#page-context) section above for the full payload shape.
+### Addin context (your plugin's state)
+
+Use `AddinContext` to register your plugin's UI state — which window is open, what workflow the user is in, what data is loaded. This context is automatically merged with Revit API data whenever `PushToWidget` is called.
+
+```csharp
+// When your plugin opens a window
+AddinContext.Set("activeWindow", "Shear Wall Editor");
+AddinContext.Set("workflow", "Wall placement — step 2 of 4");
+AddinContext.Set("loadedProject", "Tower A — Zone 3");
+RevitContextHelper.PushToWidget(uiApp);
+
+// When the window closes
+AddinContext.Clear("activeWindow");
+AddinContext.Clear("workflow");
+RevitContextHelper.PushToWidget(uiApp);
+
+// When your plugin shuts down entirely
+AddinContext.ClearAll();
+```
+
+The agent then sees context like:
+```
+Active view: FloorPlan - Level 1
+documentTitle: Tower A.rvt
+activeWindow: Shear Wall Editor
+workflow: Wall placement — step 2 of 4
+loadedProject: Tower A — Zone 3
+selectedElements: 3 (Walls: 2, Doors: 1)
+```
+
+`AddinContext` is thread-safe and persists across commands. Set it when state changes, clear it when it's no longer relevant.
+
+### Sending context without the Revit API
+
+If you need to push context outside of a Revit API context (no `UIApplication` available), use `SendContext` directly:
+
+```csharp
+GleanFabWidget.SendContext(
+    activeView: "Custom View",
+    metadata: new Dictionary<string, string>
+    {
+        ["activeWindow"] = "Settings Dialog",
+        ["phaseFilter"] = "New Construction"
+    }
+);
+```
+
+See the [Page context](#page-context) section for the full payload shape.
 
 ## Optional: Adjust viewport size
 
