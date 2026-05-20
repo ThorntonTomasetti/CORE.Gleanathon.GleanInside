@@ -107,7 +107,6 @@
 
   const apiUrl = () => props.apiUrl || '/api/chat'
   const title = computed(() => props.title || 'Glean Helper')
-
   function resolveAgentId (): string | undefined {
     const params = new URLSearchParams(window.location.search)
     return params.get('agentId')
