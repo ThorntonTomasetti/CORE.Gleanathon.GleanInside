@@ -176,14 +176,38 @@ Add two HTML tags somewhere the browser will load them — typically right befor
 
 ### Attributes reference
 
-| Attribute   | Required | Description                                                                                  |
-| ----------- | -------- | -------------------------------------------------------------------------------------------- |
-| `app-id`    | yes      | Must match an entry in `server/src/appScopes.ts`. Determines retrieval scope.                |
-| `api-url`   | yes      | Full URL of the gleanathon backend's chat endpoint. Include `/api/chat`.                     |
-| `agent-id`  | no       | If set, routes through Glean Agents API instead of plain Chat.                               |
-| `title`     | no       | Custom heading text in the chat panel. Defaults to `"Helper"`.                               |
+| Attribute      | Required | Description                                                                                  |
+| -------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `app-id`       | yes      | Must match an entry in `server/src/appScopes.ts`. Determines retrieval scope.                |
+| `api-url`      | yes      | Full URL of the gleanathon backend's chat endpoint. Include `/api/chat`.                     |
+| `agent-id`     | no       | If set, routes through Glean Agents API instead of plain Chat.                               |
+| `title`        | no       | Custom heading text in the chat panel. Defaults to `"Helper"`.                               |
+| `page-context` | no       | Set to `"false"` to disable automatic page context collection. Defaults to enabled.          |
 
 The widget renders a fixed-position floating button in the bottom-right corner of the page, so the placement of the `<glean-helper>` tag in the DOM doesn't matter — anywhere inside `<body>` works.
+
+### Overriding the agent ID during development
+
+During development you can switch agent IDs without editing HTML or restarting anything. The widget resolves the agent ID in this priority order:
+
+1. **URL query parameter** (highest) — `?agentId=abc123`
+2. **localStorage** — `glean-agent-id` key
+3. **HTML attribute** — `agent-id="..."` on `<glean-helper>`
+
+Examples:
+
+```
+# Just change the URL
+http://localhost:3000?agentId=532b0e6b1e2b47feae7a373fca9fc1da
+
+# Or set it once in the browser console — persists across refreshes
+localStorage.setItem('glean-agent-id', '532b0e6b1e2b47feae7a373fca9fc1da')
+
+# Clear the override
+localStorage.removeItem('glean-agent-id')
+```
+
+This makes it easy to test different agents without touching code. In production, the HTML attribute is the source of truth.
 
 ## Step 9 — Try it
 
@@ -257,6 +281,91 @@ app.config.compilerOptions.isCustomElement = tag => tag === 'glean-helper'
 ```
 
 before `app.mount()`. Or just keep the tag in `index.html` outside the Vue root.
+
+---
+
+## Page context
+
+The widget can automatically capture page context and send it alongside every user message. This gives the Glean agent awareness of what the user is looking at — no manual copy-pasting needed.
+
+### What gets captured
+
+| Field | Source | Example |
+|-------|--------|---------|
+| **URL** | Browser `location.href` | `https://myapp.com/projects/42` |
+| **Page title** | `document.title` | `Project Dashboard` |
+| **HTML snippet** | Sanitised page body (or `[data-glean-context]` element) | Cleaned HTML, up to 8 KB |
+| **Active view** | Host app via `postMessage` | `3D View - Level 2` |
+| **Metadata** | Host app via `postMessage` | `{ "selectedElements": "3 walls" }` |
+
+The HTML is automatically sanitised: `<script>`, `<style>`, `<svg>`, `<noscript>`, and the widget itself are stripped. Class names, inline styles, and `data-*` attributes are removed. What remains is the semantic structure — headings, tables, text content, links, inputs.
+
+### How the agent receives it
+
+Context is prepended to the user's message as a structured text block:
+
+```
+[Page Context]
+URL: https://myapp.com/projects/42
+Page title: Project Dashboard
+Active view: Floor Plan - Level 2
+selectedElements: 3 walls, 1 door
+HTML snippet:
+<h2>Tower A</h2>
+<table><tr><td>Status</td><td>In Review</td></tr></table>
+[End Context]
+
+Why are these tasks overdue?
+```
+
+No special API features are required — the agent sees this as part of the message input.
+
+### Disabling context for .NET / desktop hosts
+
+Apps embedded in WebView2 (Revit, WPF, etc.) where the page HTML is just the widget shell should disable page context to avoid confusing the agent:
+
+```html
+<glean-helper app-id="core-swap" agent-id="..." page-context="false" />
+```
+
+### Sending context from native host apps (postMessage)
+
+Native host apps can push structured context via `postMessage` instead of (or alongside) browser-collected HTML:
+
+```js
+webview.postMessage(JSON.stringify({
+  type: "glean-context",
+  payload: {
+    activeView: "Floor Plan - Level 2",
+    pageTitle: "My Revit Project",
+    metadata: {
+      selectedElements: "3 walls, 1 door",
+      documentPath: "C:/Projects/TowerA.rvt"
+    }
+  }
+}));
+```
+
+Context is merged with any browser-collected data. It can be sent at any time — the widget takes the latest snapshot when the user sends a message.
+
+### Targeted HTML capture
+
+If only part of the page is relevant, mark it with `data-glean-context`:
+
+```html
+<div data-glean-context>
+  <h2>Project: Tower A</h2>
+  <table>...</table>
+</div>
+```
+
+When present, this takes priority over the full `document.body`.
+
+### Glean agent instructions
+
+When configuring your Glean agent, include guidance like:
+
+> The user's message may begin with a `[Page Context]` block containing the URL, page title, visible HTML, and app-specific metadata from the page they are viewing. Use this context to ground your answers — reference specific elements, values, or states visible on the page when relevant. If no context block is present, answer normally.
 
 ---
 
