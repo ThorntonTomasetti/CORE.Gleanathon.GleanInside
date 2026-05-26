@@ -27,7 +27,7 @@ namespace ChatbotComponent
         public GleanChatbotComponent()
             : base("Glean Chatbot", "GleanBot",
                 $"Send messages to the Glean Agent API and receive AI responses. " +
-                $"Conversation history is stored inside the component 鈥?no wire loop needed. " +
+                $"Conversation history is stored inside the component, no wire loop needed. " +
                 $"Toggle Reset to True to start a new session. " +
                 $"v{Version}",
                 "ShapeDiver", "AI")
@@ -90,7 +90,7 @@ namespace ChatbotComponent
 
             if (string.IsNullOrWhiteSpace(message))
             {
-                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Message is empty 鈥?nothing sent.");
+                AddRuntimeMessage(GH_RuntimeMessageLevel.Warning, "Message is empty, nothing sent.");
                 DA.SetData(1, _persistentHistory);
                 DA.SetData(3, BuildChatLog(DeserializeMessages(_persistentHistory)));
                 return;
@@ -130,7 +130,7 @@ namespace ChatbotComponent
             }
         }
 
-        // 鈹€鈹€鈹€ Core API call 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // Core API call 
 
         private async Task<(string responseText, string updatedHistory, string chatLog)> CallGleanChat(
             string userMessage, string token, string domain, string historyJson, string agentId)
@@ -250,7 +250,7 @@ namespace ChatbotComponent
             return sb.ToString().TrimEnd();
         }
 
-        // 鈹€鈹€鈹€ JSON models 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // === JSON models ==========================================================
 
         // Persisted between turns; serialised as the History output
         private class ConversationState
@@ -298,13 +298,13 @@ namespace ChatbotComponent
             [JsonPropertyName("sessionId")] public string SessionId { get; set; }
         }
 
-        // 鈹€鈹€鈹€ Grasshopper metadata 鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€鈹€
+        // === Grasshopper metadata =================================================
 
         public override GH_Exposure Exposure => GH_Exposure.primary;
 
         protected override System.Drawing.Bitmap Icon => ChatbotComponentInfo._icon;
 
-        // Unique, stable GUID 鈥?never change this once the component is deployed
+        // Unique, stable GUID, never change this once the component is deployed
         public override Guid ComponentGuid => new Guid("3f8a1c9e-2b74-4d56-a831-7c4f9e2d10ab");
     }
 }
