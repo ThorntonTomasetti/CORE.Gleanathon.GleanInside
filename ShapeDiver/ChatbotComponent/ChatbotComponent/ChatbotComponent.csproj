@@ -64,4 +64,23 @@
     <PackageReference Include="System.Drawing.Common" Version="7.0.0" ExcludeAssets="runtime" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <EmbeddedResource Include="glean_bot.jfif" />
+  </ItemGroup>
+
+  <!-- Auto-copy to Grasshopper Libraries subfolders after build -->
+  <Target Name="CopyToGrasshopperLibraries" AfterTargets="Build">
+
+    <!-- Rhino 7 → Libraries\RH7\ -->
+    <Copy Condition="$(TargetFramework.StartsWith('net4'))"
+          SourceFiles="$(OutputPath)$(AssemblyName).gha"
+          DestinationFolder="$(APPDATA)\Grasshopper\Libraries\RH7" />
+
+    <!-- Rhino 8 Windows → Libraries\RH8\ -->
+    <Copy Condition="$(TargetFramework.Contains('-windows'))"
+          SourceFiles="$(OutputPath)$(AssemblyName).gha"
+          DestinationFolder="$(APPDATA)\Grasshopper\Libraries\RH8" />
+
+  </Target>  
 </Project>
